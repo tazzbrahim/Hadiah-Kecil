@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebook Interaktif Premium</title>
+    <!-- Font Gabungan untuk Estetika Maksimal -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Palette Warna sesuai spesifikasi */
+            --bg-color: #F3F1ED;
+            --notebook-paper: #FDFBF7;
+            --text-color: #3A3A3A;
+            --accent-color: #8C867A;
+            
+            /* Warna Cover Premium */
+            --cover-base: #968F8A; 
+            --gold-light: #F0E68C;
+            --gold-base: #D4AF37;
+            --gold-dark: #AA8C2C;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at center, #FDFBF9 0%, #E8E4DE 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Cormorant Garamond', serif;
+            perspective: 2000px;
+        }
+
+        /* --- CONTAINER SCENE --- */
+        .scene {
+            position: relative;
+            width: 320px;
+            height: 460px;
+            transform: rotateZ(-6deg); /* Miring sinematik */
+            transition: transform 1.2s ease;
+        }
+
+        .book {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Geser buku ke kanan saat terbuka agar terlihat simetris di tengah */
+        .book.is-open {
+            transform: translateX(50%);
+        }
+
+        /* --- HALAMAN KANAN (DIAM) --- */
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 4px 12px 12px 4px;
+            background-color: var(--notebook-paper);
+        }
+
+        .right-page {
+            z-index: 1;
+            box-shadow: 15px 20px 40px rgba(0,0,0,0.15);
+            border-right: 4px solid #e5e2dd;
+            border-bottom: 4px solid #e5e2dd;
+        }
+
+        .content-container {
+            padding: 45px 35px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        /* --- GRUP SAMPUL & HALAMAN KIRI (BERPUTAR) --- */
+        .flip-group {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            z-index: 2;
+            transition: transform 1.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .book.is-open .flip-group {
+            transform: rotateY(-180deg);
+        }
+
+        /* --- VISUAL SAMPUL DEPAN (DARI COVER.HTML) --- */
+        .front-cover {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--cover-base);
+            border-radius: 4px 16px 16px 4px;
+            backface-visibility: hidden; /* Hilang saat diputar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            
+            /* Lighting & Texture */
+            background-image: linear-gradient(90deg, 
+                rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.2) 3%, 
+                rgba(0,0,0,0.05) 6%, transparent 10%, transparent 90%, rgba(0,0,0,0.1) 100%);
+            box-shadow: inset 1px 0 2px rgba(255,255,255,0.3), inset -1px -1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Tekstur Kulit Matte */
+        .front-cover::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 4px 16px 16px 4px;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            opacity: 0.6;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+        }
+
+        .spine-crease {
+            position: absolute;
+            left: 18px; top: 0; bottom: 0; width: 2px;
+            background: rgba(0,0,0,0.1);
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Judul Gold Foil pada Cover */
+        .title-container {
+            text-align: center;
+            transform: translateZ(1px);
+        }
+
+        .main-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            font-style: italic;
+            background: linear-gradient(45deg, var(--gold-dark), var(--gold-base), var(--gold-light), var(--gold-base), var(--gold-dark));
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            filter: drop-shadow(0px 1px 0px rgba(255,255,255,0.3)) drop-shadow(0px -1px 0px rgba(0,0,0,0.2));
+            animation: shine 6s linear infinite;
+        }
+
+        .subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 8px;
+        }
+
+        @keyframes shine { to { background-position: 200% center; } }
+
+        /* --- HALAMAN KIRI DALAM --- */
+        .inside-left-page {
+            position: absolute;
+            inset: 0;
+            background-color: var(--notebook-paper);
+            border-radius: 12px 4px 4px 12px;
+            transform: rotateY(180deg);
+            backface-visibility: hidden;
+            padding: 45px 35px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: inset -15px 0 25px rgba(0,0,0,0.05);
+        }
+
+        /* --- TIPOGRAFI CERITA --- */
+        .story-text {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: var(--text-color);
+            margin-bottom: 22px;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+        
+        .story-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .story-heading {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-color);
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 12px;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+
+        .lines {
+            background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
+            background-size: 100% 1.7rem;
+            position: absolute;
+            inset: 45px 35px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* TOMBOL NAVIGASI */
+        .action-btn {
+            align-self: flex-end;
+            margin-top: auto;
+            background: transparent;
+            border: 1px solid var(--text-color);
+            padding: 12px 28px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            color: var(--text-color);
+            opacity: 0;
+        }
+
+        .action-btn:hover {
+            background-color: var(--text-color);
+            color: var(--notebook-paper);
+        }
+
+        /* DELAY UTILITIES */
+        .delay-1 { transition-delay: 0.5s; }
+        .delay-2 { transition-delay: 1.2s; }
+        .delay-3 { transition-delay: 2s; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .scene { width: 85vw; height: 65vh; transform: rotateZ(-4deg); }
+            .book.is-open { transform: translateX(0); scale: 0.9; }
+            .main-title { font-size: 1.8rem; }
+        }
+
+        /* ========================= */
+/* RESPONSIVE MOBILE FIX */
+/* ========================= */
+
+@media (max-width: 480px) {
+
+    body {
+        align-items: flex-start;
+        padding-top: 6vh;
+    }
+
+    .scene {
+        width: 92vw;
+        height: 68vh;
+        transform: rotateZ(-3deg);
+    }
+
+    .book.is-open {
+        transform: translateX(0) scale(0.95);
+    }
+
+    .content-container,
+    .inside-left-page {
+        padding: 28px 22px;
+    }
+
+    .story-text {
+        font-size: 1rem;
+        line-height: 1.65;
+    }
+
+    .story-heading {
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        margin-bottom: 18px;
+    }
+
+    .main-title {
+        font-size: 1.6rem;
+        letter-spacing: 1.5px;
+    }
+
+    .subtitle {
+        font-size: 0.55rem;
+        letter-spacing: 3px;
+    }
+
+    .action-btn {
+        padding: 10px 22px;
+        font-size: 0.65rem;
+    }
+}
+
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div class="book" id="notebook">
+            <!-- 1. HALAMAN DASAR (KANAN) -->
+            <div class="page right-page">
+                <div class="lines"></div>
+                <div class="content-container" id="right-content">
+                    <p class="story-text delay-3">
+                        aku bersyukur bisa kenal kamu, bisa cerita sama kamu, dan yang paling penting. terimakasih udah mau bangunin aku sahur yaa. 
+                    </p>
+                    <p class="story-text delay-3" style="transition-delay: 2.8s;">
+                        dan aku ga akan lupa sama orang yang suka makan promina. sama kayak orangnya, dan aku juga ga akan lupa sama orang yang sangatt suka matcha.
+                    </p>
+                    
+                    <button class="action-btn delay-3" id="closeBtn" style="transition-delay: 3.5s;">
+                        Tutup Jurnal
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. GRUP COVER & HALAMAN KIRI -->
+            <div class="flip-group">
+                <!-- Sisi Depan: Desain Premium dari cover.html -->
+                <div class="front-cover">
+                    <div class="spine-crease"></div>
+                    <div class="title-container">
+                        <h1 class="main-title">For You</h1>
+                        <div class="subtitle">A MEMOIR</div>
+                    </div>
+                </div>
+
+                <!-- Sisi Belakang: Halaman Kiri Dalam -->
+                <div class="inside-left-page">
+                    <div class="lines"></div>
+                    <div class="story-heading delay-2">Bab I: awal mula aku suka kamu</div>
+                    <p class="story-text delay-2">
+                        waktu itu saat aku pertama kali aku lihat kamu, aku rasa kamu paling beda dari yang lain meskipun waktu itu kamu pakai masker tapi tetap kelihatan cantik.
+                    </p>
+                    <p class="story-text delay-2" style="transition-delay: 1.8s;">
+                        bagiku waktu itu adalah masa yang ga akan bisa terulang kembali. dan pada waktu itu juga bisa merasakan kebahagiaan walaupun hanya sementara.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const notebook = document.getElementById('notebook');
+            const rightContent = document.getElementById('right-content');
+            const closeBtn = document.getElementById('closeBtn');
+            const textElements = document.querySelectorAll('.story-text, .story-heading, .action-btn');
+
+            // Fungsi memicu visibilitas teks
+            function toggleText(show) {
+                rightContent.style.opacity = show ? '1' : '0';
+                textElements.forEach(el => {
+                    if (show) {
+                        el.classList.add('visible');
+                        el.style.opacity = '1';
+                    } else {
+                        el.classList.remove('visible');
+                        el.style.opacity = '0';
+                    }
+                });
+            }
+
+            // 1. Animasi Pembukaan Otomatis
+            setTimeout(() => {
+                notebook.classList.add('is-open');
+                // Beri waktu animasi buka (1.8s) selesai sebelum teks muncul
+                setTimeout(() => toggleText(true), 1200);
+            }, 1000);
+
+            // 2. Animasi Penutupan & Navigasi
+            closeBtn.addEventListener('click', () => {
+                toggleText(false);
+                
+                setTimeout(() => {
+                    notebook.classList.remove('is-open');
+                    
+                    // Redirect setelah animasi tutup selesai
+                    setTimeout(() => {
+                        window.location.href = 'game.html';
+                    }, 1800);
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html>
